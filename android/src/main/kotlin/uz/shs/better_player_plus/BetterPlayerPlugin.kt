@@ -82,10 +82,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {}
 
-    override fun onDetachedFromActivity() {
-        // Release disk cache to free file handles and memory-mapped resources when activity goes away
-        releaseCache()
-    }
+    override fun onDetachedFromActivity() {}
 
     private fun disposeAllPlayers() {
         for (i in 0 until videoPlayers.size()) {
