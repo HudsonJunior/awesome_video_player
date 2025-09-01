@@ -110,6 +110,8 @@ internal class BetterPlayer(
             this.customDefaultLoadControl.bufferForPlaybackMs,
             this.customDefaultLoadControl.bufferForPlaybackAfterRebufferMs
         )
+        // Do not retain back buffer to minimize memory footprint in list feeds
+        loadBuilder.setBackBuffer(0, /* retainFromKeyframe= */ false)
         loadControl = loadBuilder.build()
         exoPlayer = ExoPlayer.Builder(context)
             .setTrackSelector(trackSelector)
@@ -271,7 +273,18 @@ internal class BetterPlayer(
                                     outputData.getString(BetterPlayerPlugin.FILE_PATH_PARAMETER)
                                 //Bitmap here is already processed and it's very small, so it won't
                                 //break anything.
-                                bitmap = BitmapFactory.decodeFile(filePath)
+                                var decoded = BitmapFactory.decodeFile(filePath)
+                                if (decoded != null) {
+                                    // Defensive: cap size in case of device-specific decode issues
+                                    val maxSize = 256
+                                    if (decoded.width > maxSize || decoded.height > maxSize) {
+                                        val aspect = decoded.width.toFloat() / decoded.height
+                                        val targetW = if (decoded.width >= decoded.height) maxSize else (maxSize * aspect).toInt()
+                                        val targetH = if (decoded.height > decoded.width) maxSize else (maxSize / aspect).toInt()
+                                        decoded = Bitmap.createScaledBitmap(decoded, targetW, targetH, true)
+                                    }
+                                }
+                                bitmap = decoded
                                 bitmap?.let { bitmap ->
                                     callback.onBitmap(bitmap)
                                 }
